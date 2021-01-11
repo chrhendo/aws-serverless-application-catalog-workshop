@@ -154,28 +154,28 @@ Resources:
                 Key: "Project"
                 Value: !Ref ProjectName
 
-    CodeBuildLoadTestProject:
-        Type: AWS::CodeBuild::Project
-        Properties:
-            Name: !Sub ${ProjectName}-LoadTest
-            Description: !Sub 'Load Test Build project for the ${ProjectName}'
-            Artifacts:
-              Type: CODEPIPELINE
-            Environment: 
-                Type: LINUX_CONTAINER
-                ComputeType: BUILD_GENERAL1_LARGE #https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
-                Image: aws/codebuild/amazonlinux2-x86_64-standard:2.0 #  https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
-            ServiceRole: !GetAtt CodeBuildServiceRole.Arn
-            Source: 
-                Type: CODEPIPELINE
-                BuildSpec: load-test.yml
-            Tags: 
-              - 
-                Key: "Stack"
-                Value: !Ref AWS::StackName
-              -
-                Key: "Project"
-                Value: !Ref ProjectName
+    # CodeBuildLoadTestProject:
+    #     Type: AWS::CodeBuild::Project
+    #     Properties:
+    #         Name: !Sub ${ProjectName}-LoadTest
+    #         Description: !Sub 'Load Test Build project for the ${ProjectName}'
+    #         Artifacts:
+    #           Type: CODEPIPELINE
+    #         Environment: 
+    #             Type: LINUX_CONTAINER
+    #             ComputeType: BUILD_GENERAL1_LARGE #https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
+    #             Image: aws/codebuild/amazonlinux2-x86_64-standard:2.0 #  https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
+    #         ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+    #         Source: 
+    #             Type: CODEPIPELINE
+    #             BuildSpec: load-test.yml
+    #         Tags: 
+    #           - 
+    #             Key: "Stack"
+    #             Value: !Ref AWS::StackName
+    #           -
+    #             Key: "Project"
+    #             Value: !Ref ProjectName
 
 
 
@@ -281,54 +281,54 @@ Resources:
                       OutputArtifacts:
                         - Name: !Sub ${ProjectName}DevChangeSet
                       RunOrder: 2
-#Staging Environment Deploy
-                - Name: Staging
-                  Actions:
-                    - Name: CreateChangeSet
-                      ActionTypeId:
-                        Category: Deploy
-                        Owner: AWS
-                        Provider: CloudFormation
-                        Version: "1"
-                      Configuration:
-                        ActionMode: CHANGE_SET_REPLACE
-                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
-                        StackName: !Sub ${ProjectName}-Staging
-                        ChangeSetName: !Sub ${ProjectName}-ChangeSet-Staging
-                        ParameterOverrides: !Sub '{"ProjectName": "${ProjectName}","Stage": "Staging"}'
-                        TemplatePath: BuildArtifactAsZip::packaged.yaml
-                        Capabilities: CAPABILITY_IAM
-                      InputArtifacts:
-                        - Name: BuildArtifactAsZip
-                      RunOrder: 1
-                    - Name: ExecuteChangeSet
-                      Namespace: "stagingVariables"
-                      ActionTypeId:
-                        Category: Deploy
-                        Owner: AWS
-                        Provider: CloudFormation
-                        Version: "1"
-                      Configuration:
-                        ActionMode: CHANGE_SET_EXECUTE
-                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
-                        StackName: !Sub ${ProjectName}-Staging
-                        ChangeSetName: !Sub ${ProjectName}-ChangeSet-Staging
-                      OutputArtifacts:
-                        - Name: !Sub ${ProjectName}StagingChangeSet
-                      RunOrder: 2
-#Gatling/Locust Load Test
-                    - Name: LoadTest
-                      ActionTypeId:
-                        Category: Test
-                        Owner: AWS
-                        Provider: CodeBuild
-                        Version: "1"
-                      Configuration:
-                        ProjectName: !Ref CodeBuildLoadTestProject
-                        EnvironmentVariables: '[{"name":"ApiUrl","value":"#{stagingVariables.ApiUrl}","type":"PLAINTEXT"}]'
-                      InputArtifacts:
-                        - Name: SourceCodeAsZip
-                      RunOrder: 3         
+# #Staging Environment Deploy
+#                 - Name: Staging
+#                   Actions:
+#                     - Name: CreateChangeSet
+#                       ActionTypeId:
+#                         Category: Deploy
+#                         Owner: AWS
+#                         Provider: CloudFormation
+#                         Version: "1"
+#                       Configuration:
+#                         ActionMode: CHANGE_SET_REPLACE
+#                         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+#                         StackName: !Sub ${ProjectName}-Staging
+#                         ChangeSetName: !Sub ${ProjectName}-ChangeSet-Staging
+#                         ParameterOverrides: !Sub '{"ProjectName": "${ProjectName}","Stage": "Staging"}'
+#                         TemplatePath: BuildArtifactAsZip::packaged.yaml
+#                         Capabilities: CAPABILITY_IAM
+#                       InputArtifacts:
+#                         - Name: BuildArtifactAsZip
+#                       RunOrder: 1
+#                     - Name: ExecuteChangeSet
+#                       Namespace: "stagingVariables"
+#                       ActionTypeId:
+#                         Category: Deploy
+#                         Owner: AWS
+#                         Provider: CloudFormation
+#                         Version: "1"
+#                       Configuration:
+#                         ActionMode: CHANGE_SET_EXECUTE
+#                         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+#                         StackName: !Sub ${ProjectName}-Staging
+#                         ChangeSetName: !Sub ${ProjectName}-ChangeSet-Staging
+#                       OutputArtifacts:
+#                         - Name: !Sub ${ProjectName}StagingChangeSet
+#                       RunOrder: 2
+# #Gatling/Locust Load Test
+#                     - Name: LoadTest
+#                       ActionTypeId:
+#                         Category: Test
+#                         Owner: AWS
+#                         Provider: CodeBuild
+#                         Version: "1"
+#                       Configuration:
+#                         ProjectName: !Ref CodeBuildLoadTestProject
+#                         EnvironmentVariables: '[{"name":"ApiUrl","value":"#{stagingVariables.ApiUrl}","type":"PLAINTEXT"}]'
+#                       InputArtifacts:
+#                         - Name: SourceCodeAsZip
+#                       RunOrder: 3         
 #Production Environment Deploy
                 - Name: Prod
                   Actions:
